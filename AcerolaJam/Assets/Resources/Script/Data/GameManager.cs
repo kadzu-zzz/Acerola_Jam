@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
 
         data.postLoad();
 
+        SceneManager.sceneLoaded += SceneLoading;
         SceneManager.sceneUnloaded += SceneUnloading;
 
     }
@@ -48,6 +49,17 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         OnStart();
+    }
+
+    private void SceneLoading(Scene scene, LoadSceneMode mode)
+    {
+        switch (scene.name)
+        {
+            case "MapScene":
+                break;
+            case "GameScene":
+                break;
+        }    
     }
 
     private void SceneUnloading(Scene scene)

@@ -51,4 +51,16 @@ public class ProgramManager : MonoBehaviour
     {
         Cleanup();
     }
+
+    public void Quit()
+    {
+#if UNITY_EDITOR
+        if (UnityEditor.EditorApplication.isPlaying)
+        {
+            UnityEditor.EditorApplication.isPlaying = false;
+        }
+#else
+        Application.Quit();
+#endif
+    }
 }
