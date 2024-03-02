@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ProgramManager : MonoBehaviour
@@ -14,7 +15,7 @@ public class ProgramManager : MonoBehaviour
 
     private void Awake()
     {
-        instance = this;        
+        instance = this;
     }
 
     public void OnStart()

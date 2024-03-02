@@ -56,8 +56,10 @@ public class GameManager : MonoBehaviour
         switch (scene.name)
         {
             case "MapScene":
+                Cursor.lockState = CursorLockMode.None;
                 break;
             case "GameScene":
+                Cursor.lockState = CursorLockMode.Confined;
                 break;
         }    
     }

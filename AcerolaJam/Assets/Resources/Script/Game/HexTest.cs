@@ -23,9 +23,11 @@ public class HexTest : MonoBehaviour
     {
         if(Input.GetMouseButton(0))
         {
-           Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Vector3 dir = ray.direction.normalized;
 
-            Vector3 point = ray.origin + (ray.direction * 120.0f);
+            float t = (20.0f - ray.origin.z) / dir.z;
+            Vector3 point = ray.origin + (dir * t);
 
             Vector2 pos = new Vector2(point.x, point.y);
             var coord = Coord.FromGrid(pos.x, pos.y);

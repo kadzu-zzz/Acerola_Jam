@@ -114,7 +114,7 @@ public class Coord
 
     public override bool Equals(object obj)
     {
-        if (obj is (Coord))
+        if (obj is (Coord) && !(obj is null))
             return (Coord)obj == this;
         return false;
     }
@@ -126,11 +126,19 @@ public class Coord
 
     public static bool operator ==(Coord a, Coord b)
     {
+        if (ReferenceEquals(a, b))
+        {
+            return true;
+        }
+        if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
+        {
+            return false;
+        }
         return a.h == b.h && a.l == b.l && a.r == b.r;
     }
     public static bool operator !=(Coord a, Coord b)
     {
-        return a.h != b.h || a.l != b.l || a.r != b.r;
+        return !(a == b);
     }
     public static Coord operator +(Coord a, Coord b)
     {
