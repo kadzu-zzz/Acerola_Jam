@@ -5,13 +5,13 @@ using UnityEngine.SceneManagement;
 
 public class TransferToLevel : MonoBehaviour
 {
-    public static string level_string = "";
+    public static int int_level;
 
-    public string target_level = "";
+    public int target_level = 0;
 
     public void Transfer()
     {
-        level_string = target_level;
+        int_level = target_level;
         SceneManager.LoadScene("GameScene");
     }
 }

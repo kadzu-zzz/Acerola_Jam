@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     public void StopGame()
@@ -31,14 +32,10 @@ public class GameManager : MonoBehaviour
         ProgramManager.Instance().GameStarted();
 
         data = SaveLoadHelper<SaveDataV1>.Load("test_save");
-        Debug.Log(data.test_data);
-        data.test_data = 42;
-
         data.postLoad();
 
         SceneManager.sceneLoaded += SceneLoading;
         SceneManager.sceneUnloaded += SceneUnloading;
-
     }
 
     public void Cleanup()

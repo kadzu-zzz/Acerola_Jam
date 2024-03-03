@@ -4,9 +4,7 @@ using UnityEngine;
 
 public interface IFileSave 
 {
-    public int GetTestData();
-    public TestType GetTestType();
-
+    public int GetLevelProgress();
 
 
 }

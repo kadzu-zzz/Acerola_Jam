@@ -6,7 +6,7 @@ using UnityEngine;
 public class MapCameraController : MonoBehaviour
 {
     public Cinemachine.CinemachineVirtualCamera virtual_camera;
-    public PolygonCollider2D polygonCollider = null;
+    Collider2D polygonCollider = null;
     public float speed = 100.0f;
 
     public float min_zoom = 150;
@@ -40,16 +40,20 @@ public class MapCameraController : MonoBehaviour
         scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0.0f)
         {
-            CinemachineComponentBase componentBase = virtual_camera.GetCinemachineComponent(CinemachineCore.Stage.Body);
-            if (componentBase is CinemachineFramingTransposer)
+            if (virtual_camera != null)
             {
-                (componentBase as CinemachineFramingTransposer).m_CameraDistance = Mathf.Max(Mathf.Min(max_zoom, (75000 * -scroll * Time.deltaTime) + (componentBase as CinemachineFramingTransposer).m_CameraDistance), min_zoom); 
+                CinemachineComponentBase componentBase = virtual_camera.GetCinemachineComponent(CinemachineCore.Stage.Body);
+                if (componentBase is CinemachineFramingTransposer)
+                {
+                    (componentBase as CinemachineFramingTransposer).m_CameraDistance = Mathf.Max(Mathf.Min(max_zoom, (75000 * -scroll * Time.deltaTime) + (componentBase as CinemachineFramingTransposer).m_CameraDistance), min_zoom);
+                }
             }
         }
 
         transform.position = transform.position + (new Vector3(delta.x, delta.y, 0) * Time.deltaTime);
 
-        if(!polygonCollider.OverlapPoint(transform.position)) {
+        polygonCollider = virtual_camera.GetComponent<CinemachineConfiner2D>().m_BoundingShape2D;
+        if (!polygonCollider.OverlapPoint(transform.position)) {
             transform.position = polygonCollider.ClosestPoint(transform.position);
         }
     }

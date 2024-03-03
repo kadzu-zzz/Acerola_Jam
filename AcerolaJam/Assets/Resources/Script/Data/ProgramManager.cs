@@ -16,6 +16,7 @@ public class ProgramManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     public void OnStart()

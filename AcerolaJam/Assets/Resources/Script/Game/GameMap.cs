@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameMap : MonoBehaviour
 {
@@ -21,8 +22,10 @@ public class GameMap : MonoBehaviour
 
     float win_check = 1.0f;
 
+    public float delay = 4.5f;
     void Start()
     {
+        level = TransferToLevel.int_level;
         current = GameLevels.GetLevel(level);
         current.Setup(this);
 
@@ -71,6 +74,11 @@ public class GameMap : MonoBehaviour
 
     void Update()
     {
+        if (delay > 0)
+        {
+            delay -= Time.deltaTime;
+            return;
+        }
         foreach(var c in colonies)
         {
             c.Update();
@@ -88,7 +96,10 @@ public class GameMap : MonoBehaviour
             win_check += 1.0f;
             if(current.CheckVictory(this))
             {
-                Debug.Log("Winnar");
+                MapSceneSelection.first_complete = (GameManager.Instance().data.level_progress < level);
+                MapSceneSelection.level_complete = level;
+                GameManager.Instance().data.level_progress = Mathf.Max(level, GameManager.Instance().data.level_progress);
+                SceneManager.LoadScene("MapScene");
             }
         }
     }
