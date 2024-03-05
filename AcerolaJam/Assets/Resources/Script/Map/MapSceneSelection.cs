@@ -14,11 +14,6 @@ public class MapSceneSelection : MonoBehaviour
     public Button ui_transit_lab, ui_transit_body;
     public Button ui_replay_intro, ui_replay_breach, ui_replay_breakout;
 
-    bool start_cinematic = false;
-    bool is_replay = false;
-    bool ui_cinematic = false;
-    int ui_cinematic_id = -1;
-
     public ChangeBounds b_lab, b_body;
     public CinematicController cine;
 
@@ -70,23 +65,6 @@ public class MapSceneSelection : MonoBehaviour
                     //Credits?
                 });
             }
-        }
-    }
-
-    void Update()
-    {
-        
-        if(ui_cinematic)
-        {
-            switch (ui_cinematic_id)
-            {
-                case 0:
-                    break;
-                case 1:
-                    break;
-                case 2:
-                    break;
-            } 
         }
     }
 
