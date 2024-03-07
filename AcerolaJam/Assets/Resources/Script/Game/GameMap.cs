@@ -81,8 +81,8 @@ public class GameMap : MonoBehaviour
         }
         foreach(var c in colonies)
         {
-            c.Update();
-            c.Render();
+           // c.Update();
+            //c.Render();
         }    
 
         foreach(var t in tiles.Values)

@@ -191,7 +191,9 @@ public partial class RenderSystem : SystemBase
 
         public void Execute([EntityIndexInQuery] int entityInQueryIndex, RefRO<LocalTransform> transform, RefRO<TimeOffsetComponent> time)
         {
-            render_trs[entityInQueryIndex - offset] = float4x4.TRS(transform.ValueRO.Position, transform.ValueRO.Rotation, transform.ValueRO.Scale); 
+            render_trs[entityInQueryIndex - offset] = float4x4.TRS((transform.ValueRO.Position * new float3(1, 1, 0)) + 
+                (math.sin(new float3(0, 0, (current_time - time.ValueRO.time_offset))) ), 
+                transform.ValueRO.Rotation, transform.ValueRO.Scale); 
             render_details[entityInQueryIndex - offset] = frames[(int)(((current_time - time.ValueRO.time_offset) % animation_speed) / (animation_speed / frames.Length))];
         }
     }

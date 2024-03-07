@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UIElements;
 using Unity.Collections;
+using Unity.Physics.Extensions;
 
 public class CoreBehaviour : MonoBehaviour
 {
@@ -124,16 +125,68 @@ public class CoreBehaviour : MonoBehaviour
         int core_id = ColonySystem.handle.NewCore(new CoreData { cohesion = cohesion_strength, 
             strength = 1.0f, speed = movement_strength, repel = repel_strength, repel_r = repel_distance, 
             target = float2.zero, center = float2.zero, cells = 0, fire_immunity = false, uv_immunity = false });
-
-        for (int i = 0; i < 2000; i++)
+        int core_id2 = ColonySystem.handle.NewCore(new CoreData
         {
-            Spawn(core_id, new Vector2(UnityEngine.Random.Range(-100.0f, 100.0f), UnityEngine.Random.Range(-100.0f, 100.0f)));
+            cohesion = cohesion_strength,
+            strength = 1.0f,
+            speed = movement_strength,
+            repel = repel_strength,
+            repel_r = repel_distance,
+            target = new float2(0, 150),
+            center = float2.zero,
+            cells = 0,
+            fire_immunity = false,
+            uv_immunity = false
+        });
+
+        for (int i = 0; i < 250; i++)
+        {
+            Spawn(core_id, new Vector2(0, -150) + new Vector2(UnityEngine.Random.Range(-10.0f, 10.0f), UnityEngine.Random.Range(-10.0f, 10.0f)), true);
+        }
+        for (int i = 0; i < 100; i++)
+        {
+            Spawn(core_id2, new Vector2(0,100) + new Vector2(UnityEngine.Random.Range(-1.0f, 1.0f), UnityEngine.Random.Range(-1.0f, 1.0f)), false);
         }
 
-        CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(50, 0, 0), new float3(10, 1000, 1000));
+        CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(250, 0, 0), new float3(10, 1000, 1000));
+        CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(-250, 0, 0), new float3(10, 1000, 1000));
+        CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(0, 250, 0), new float3(1000, 10, 1000));
+        CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(0, -250, 0), new float3(1000, 10, 1000));
+        Entity e = CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(0, 0, 0), new float3(25, 25, 1000), true);
+        World.DefaultGameObjectInjectionWorld.EntityManager.AddComponentData(e, new HazardComponent
+        {
+            fire = 0.01f,
+            uv = 0.0f,
+            food = 0.0f,
+            impulse = float2.zero
+        }); 
+        e = CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(0, -100, 0), new float3(100, 100, 1000), true);
+        World.DefaultGameObjectInjectionWorld.EntityManager.AddComponentData(e, new HazardComponent
+        {
+            fire = 0.0f,
+            uv = 0.5f,
+            food = 0.0f,
+            impulse = float2.zero
+        });
+        e = CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(-100, -100, 0), new float3(100, 100, 1000), true);
+        World.DefaultGameObjectInjectionWorld.EntityManager.AddComponentData(e, new HazardComponent
+        {
+            fire = 0.0f,
+            uv = 0.0f,
+            food = 0.0f,
+            impulse = new float2(100, 100)
+        });
+        e = CreateKinematicCube(World.DefaultGameObjectInjectionWorld.EntityManager, new float3(-100, 0, 0), new float3(100, 100, 1000), true);
+        World.DefaultGameObjectInjectionWorld.EntityManager.AddComponentData(e, new HazardComponent
+        {
+            fire = 0.0f,
+            uv = 0.0f,
+            food = 1000000.0f,
+            impulse = float2.zero
+        });
     }
 
-    void Spawn(int core_id, Vector2 position)
+    void Spawn(int core_id, Vector2 position, bool player)
     {
         int id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_cell"));
         EntityManager manager = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -142,7 +195,7 @@ public class CoreBehaviour : MonoBehaviour
         // 3
         manager.AddComponentData(entity, new LocalTransform { Position = new Vector3(position.x, position.y, 0.0f), Rotation = Quaternion.identity, Scale = 1f });
 
-        manager.AddComponentData(entity, new TimeOffsetComponent { time_offset = UnityEngine.Time.time });
+        manager.AddComponentData(entity, new TimeOffsetComponent { time_offset = UnityEngine.Time.time + UnityEngine.Random.Range(-100.0f, 0.0f) });
 
         manager.AddSharedComponentManaged(entity, new AnimatedRenderComponent
         {
@@ -162,13 +215,27 @@ public class CoreBehaviour : MonoBehaviour
 
         manager.AddComponentData(entity, new CellComponent
         {
+            belongs_to = core_id,
             health = 1.0f,
-            max_health = 1.0f
-        });
+            max_health = 1.0f,
+
+            power = 0.1f,
+            consume = 0.0f,
+            uv = 0.0f,
+            fire = 0.0f,
+            impulse = float2.zero,            
+
+            was_burning = false,
+            was_consume = false,
+            was_impulse = false, 
+            was_uv = false
+
+        }) ;
 
         manager.AddSharedComponentManaged(entity, new CoreComponent
         {
-            id = core_id
+            id = core_id,
+            player_colony = player
         });
 
         manager.AddSharedComponentManaged(entity, new PhysicsWorldIndex
@@ -176,7 +243,8 @@ public class CoreBehaviour : MonoBehaviour
             Value = 0
         });
 
-        var cyl = CreateCylinder();
+        //var cyl = CreateCylinder((uint)1 << core_id, ~(uint)1 << core_id);
+        var cyl = CreateCylinder((uint)1 << core_id, ~(uint)0 );
         manager.SetComponentData(entity, new PhysicsCollider
         {
             Value = cyl
@@ -209,7 +277,7 @@ public class CoreBehaviour : MonoBehaviour
          });*/
 
     }
-    public static Entity CreateKinematicCube(EntityManager entityManager, float3 center, float3 size)
+    public static Entity CreateKinematicCube(EntityManager entityManager, float3 center, float3 size, bool trigger = false)
     {
         // Create an entity
        var archetype = World.DefaultGameObjectInjectionWorld.EntityManager.CreateArchetype(
@@ -221,28 +289,27 @@ public class CoreBehaviour : MonoBehaviour
             typeof(PhysicsMass));
         Entity entity = entityManager.CreateEntity(archetype);
 
-        // Create a cube collider
-        BlobAssetReference<Unity.Physics.Collider> collider = CreateCubeCollider(size);
+        BlobAssetReference<Unity.Physics.Collider> collider = CreateCubeCollider(size, trigger);
 
-        // Add PhysicsCollider component
+        unsafe
+        {
+            if (trigger)
+                collider.AsPtr()->SetCollisionResponse(CollisionResponsePolicy.RaiseTriggerEvents);
+        }
         entityManager.AddComponentData(entity, new PhysicsCollider { Value = collider });
 
-        // Set the entity's position (center of the cube)
         entityManager.AddComponentData(entity, new LocalTransform{ Position = center, Rotation = Quaternion.identity, Scale = 1.0f });
         entityManager.AddComponentData(entity, new LocalToWorld {});
 
-        // Since it's kinematic, we set the PhysicsVelocity to zero
         entityManager.AddComponentData(entity, new PhysicsVelocity
         {
             Linear = float3.zero,
             Angular = float3.zero
         });
 
-        // Add PhysicsMass with zero inverse mass to make it kinematic
         var physicsMass = PhysicsMass.CreateKinematic(MassProperties.UnitSphere);
         entityManager.AddComponentData(entity, physicsMass);
 
-        // Optionally, set the PhysicsGravityFactor to zero since kinematic bodies typically don't respond to gravity
         entityManager.AddComponentData(entity, new PhysicsGravityFactor { Value = 0 });
 
         entityManager.AddSharedComponentManaged(entity, new PhysicsWorldIndex
@@ -252,35 +319,21 @@ public class CoreBehaviour : MonoBehaviour
         return entity;
     }
 
-    private static BlobAssetReference<Unity.Physics.Collider> CreateCubeCollider(float3 size)
+    private static BlobAssetReference<Unity.Physics.Collider> CreateCubeCollider(float3 size, bool trigger)
     {
-        // Define the cube geometry
         BoxGeometry boxGeometry = new BoxGeometry
         {
-            Center = float3.zero, // Centered on the entity's position
-            Size = size, // Size of the cube
-            Orientation = quaternion.identity, // No rotation relative to the entity
-            BevelRadius = 0.05f // Optional, for smoothed edges
+            Center = float3.zero, 
+            Size = size, 
+            Orientation = quaternion.identity 
+            
         };
 
-        // Create and return the cube collider
         return Unity.Physics.BoxCollider.Create(boxGeometry);
     }
-    private void OnDestroy()
-    {
-        if (static_cylinder_valid)
-            static_cylinder.Dispose();
-    }
 
-    static BlobAssetReference<Unity.Physics.Collider> static_cylinder;
-    static bool static_cylinder_valid = false;
-    private BlobAssetReference<Unity.Physics.Collider> CreateCylinder()
+    private BlobAssetReference<Unity.Physics.Collider> CreateCylinder(uint BelongsTo, uint CollidesWith)
     {
-        if(static_cylinder_valid)
-        {
-            return static_cylinder;
-        }
-        static_cylinder_valid = true;
         CylinderGeometry geo = new CylinderGeometry
         {
             Center = float3.zero,
@@ -290,10 +343,7 @@ public class CoreBehaviour : MonoBehaviour
             SideCount = 16
         };
 
-        // Sphere with default filter and material. Add to Create() call if you want non default:
-        static_cylinder = Unity.Physics.CylinderCollider.Create(geo, new CollisionFilter { BelongsTo = (uint) 1 << 1, CollidesWith = ~(uint) 1 << 1});
-        
-        return static_cylinder;
+        return BlobAssetStore.Instance().Create(0, geo, new CollisionFilter { BelongsTo = BelongsTo, CollidesWith = CollidesWith });
     }
 
     void Update()

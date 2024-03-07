@@ -24,7 +24,8 @@ public partial class ColonySystem : SystemBase
     public static ColonySystem handle;
     EntityQuery query;
 
-    ComponentTypeHandle<LocalTransform> read_only_transform_handle;
+    ComponentTypeHandle<LocalTransform> read_write_transform_handle;
+    ComponentTypeHandle<CellComponent> read_write_cell_handle;
 
     Dictionary<int, CoreData> cores;
     int core_id;
@@ -36,7 +37,8 @@ public partial class ColonySystem : SystemBase
         core_id = 0;
         cores = new();
 
-        read_only_transform_handle = GetComponentTypeHandle<LocalTransform>(true);
+        read_write_transform_handle = GetComponentTypeHandle<LocalTransform>(false);
+        read_write_cell_handle = GetComponentTypeHandle<CellComponent>(false);
     }
 
     protected override void OnUpdate()
@@ -46,9 +48,12 @@ public partial class ColonySystem : SystemBase
         EntityManager.GetAllUniqueSharedComponents(out unique_colonies, Allocator.Temp);
         int entity_count;
 
-        NativeArray<float2> accum = new NativeArray<float2>(1, Allocator.TempJob);
+        NativeReference<float2> accum = new NativeReference<float2>(float2.zero, Allocator.TempJob);
         foreach (var component in unique_colonies)
         {
+            if (component.id == 0)
+                continue;
+
             query.ResetFilter();
             query.SetSharedComponentFilter(component);
 
@@ -56,19 +61,24 @@ public partial class ColonySystem : SystemBase
             {
                 CoreData data = GetCore(component.id);
 
-                accum[0] = float2.zero;
-                read_only_transform_handle.Update(this);
-                var cell = new UpdateCells { aggregate_position = accum, ReadOnlyTransformHandle = read_only_transform_handle };
+                accum.Value = float2.zero;
+                read_write_transform_handle.Update(this);
+                read_write_cell_handle.Update(this);
+                var cell = new UpdateCells { aggregate_position = accum, ReadWriteTransformHandle = read_write_transform_handle, ReadWriteCellHandle = read_write_cell_handle,
+                can_burn = !data.fire_immunity, can_uv = !data.uv_immunity};
                 cell.Run(query);
 
-                data.center = accum[0] / entity_count;
+                data.center = accum.Value / entity_count;
                 data.cells = entity_count;
 
-                UnityEngine.Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                Vector3 dir = ray.direction.normalized;
-                float t = (20.0f - ray.origin.z) / dir.z;
-                Vector3 point = ray.origin + (dir * t);
-                data.target = new float2(point.x, point.y);
+                if (component.player_colony)
+                {
+                    UnityEngine.Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    Vector3 dir = ray.direction.normalized;
+                    float t = (20.0f - ray.origin.z) / dir.z;
+                    Vector3 point = ray.origin + (dir * t);
+                    data.target = new float2(point.x, point.y);
+                }
 
                 UpdateCore(component.id, data);
             }
@@ -96,20 +106,48 @@ public partial class ColonySystem : SystemBase
     [BurstCompile]
     public partial struct UpdateCells : IJobChunk
     {
-        public NativeArray<float2> aggregate_position;
+        public NativeReference<float2> aggregate_position;
 
-        [ReadOnly]
-        public ComponentTypeHandle<LocalTransform> ReadOnlyTransformHandle;    
+        public ComponentTypeHandle<LocalTransform> ReadWriteTransformHandle;
+        public ComponentTypeHandle<CellComponent> ReadWriteCellHandle;
+
+        public bool can_burn;
+        public bool can_uv;
 
         public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            NativeArray<LocalTransform> translations = chunk.GetNativeArray(ref ReadOnlyTransformHandle);
+            NativeArray<LocalTransform> translations = chunk.GetNativeArray(ref ReadWriteTransformHandle);
+            NativeArray<CellComponent> cells = chunk.GetNativeArray(ref ReadWriteCellHandle);
 
             var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
 
             while (enumerator.NextEntityIndex(out var i))
             {
-                aggregate_position[0] = new float2(aggregate_position[0].x + translations[i].Position.x, aggregate_position[0].y + translations[i].Position.y);
+                aggregate_position.Value = new float2(aggregate_position.Value.x + translations[i].Position.x, aggregate_position.Value.y + translations[i].Position.y);
+
+                var cell = cells[i];
+                if(can_burn)
+                    cell.health -= cell.fire;
+                if(can_uv)
+                    cell.health -= cell.uv / 1000.0f;
+                if(cell.health < cell.max_health)
+                {
+                    if(cell.consume > 0)
+                    {
+                        cell.health += math.min(cell.consume, 0.01f);
+                        cell.consume -= math.min(cell.consume, 0.01f);
+                    }
+                }
+                cell.health = math.max(0, cell.health);
+                cell.was_burning = cell.fire > 0;
+                cell.was_uv = cell.uv > 0;
+                cell.fire = 0;
+                cell.uv = 0;
+                cells[i] = cell;
+
+                var translation = translations[i];
+                translation.Scale = 0.4f + (0.6f * (cells[i].health / cells[i].max_health));
+                translations[i] = translation;
             }
         }
     }
