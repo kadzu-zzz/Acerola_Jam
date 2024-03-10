@@ -23,6 +23,7 @@ public partial class CellCleanupSystem : SystemBase
     public static CellCleanupSystem handle;
     EntityQuery query;
 
+
     protected override void OnCreate()
     {
         handle = this;
@@ -33,9 +34,22 @@ public partial class CellCleanupSystem : SystemBase
     {
         Dependency.Complete();        
         EntityCommandBuffer buffer = new EntityCommandBuffer(Allocator.TempJob);
+        NativeArray<int> count = new NativeArray<int>(ColonySystem.handle.ColonyCount(), Allocator.TempJob);
 
-        new BufferDeadCells { buffer = buffer }.Run();
+        for (int i = 0; i < count.Length; i++)
+        {
+            count[i] = 0;
+        }
 
+        new BufferDeadCells { buffer = buffer, count = count}.Run();
+
+        for(int i = 0; i < count.Length; i++)
+        {
+            if (count[i] > 0)
+                GameLevel.GenerateCells(i + 1, count[i]);
+        }
+
+        count.Dispose();
         buffer.Playback(EntityManager);
         buffer.Dispose();
     }
@@ -44,13 +58,18 @@ public partial class CellCleanupSystem : SystemBase
     public partial struct BufferDeadCells : IJobEntity
     {
         public EntityCommandBuffer buffer;
+        public NativeArray<int> count;
 
-        public void Execute(Entity e, [EntityIndexInQuery] int entityInQueryIndex, RefRO<CellComponent> cell)
+        public void Execute(Entity e, [EntityIndexInQuery] int entityInQueryIndex, RefRW<CellComponent> cell)
         {
             if (cell.ValueRO.health <= 0.0f)
             {
                 buffer.DestroyEntity(e);
-            }
+            } else if(cell.ValueRO.health >= 1.0f && cell.ValueRO.consume >= 1.0f)
+            {
+                cell.ValueRW.consume -= 1.0f;
+                count[cell.ValueRO.belongs_to - 1]++;
+            } 
         }
     }
 }

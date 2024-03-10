@@ -14,8 +14,9 @@ using Unity.Transforms;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Rendering;
-
+using UnityEngine.SceneManagement;
 
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
@@ -39,6 +40,18 @@ public partial class ColonySystem : SystemBase
 
         read_write_transform_handle = GetComponentTypeHandle<LocalTransform>(false);
         read_write_cell_handle = GetComponentTypeHandle<CellComponent>(false);
+        SceneManager.sceneUnloaded += ResetCoreId;
+    }
+
+    protected override void OnDestroy()
+    {
+        SceneManager.sceneUnloaded -= ResetCoreId;
+    }
+
+    public void ResetCoreId(Scene s)
+    {
+        cores.Clear();
+        core_id = 0;
     }
 
     protected override void OnUpdate()
@@ -47,6 +60,8 @@ public partial class ColonySystem : SystemBase
         NativeList<CoreComponent> unique_colonies;
         EntityManager.GetAllUniqueSharedComponents(out unique_colonies, Allocator.Temp);
         int entity_count;
+
+        HashSet<int> hits = new();
 
         NativeReference<float2> accum = new NativeReference<float2>(float2.zero, Allocator.TempJob);
         foreach (var component in unique_colonies)
@@ -59,6 +74,7 @@ public partial class ColonySystem : SystemBase
 
             if ((entity_count = query.CalculateEntityCount()) > 0)
             {
+                hits.Add(component.id);
                 CoreData data = GetCore(component.id);
 
                 accum.Value = float2.zero;
@@ -83,6 +99,21 @@ public partial class ColonySystem : SystemBase
                 UpdateCore(component.id, data);
             }
         }
+
+        List<int> remove = new();
+        foreach(var v in cores.Keys)
+        {
+            if(!hits.Contains(v))
+            {
+                remove.Add(v);
+
+                cores[v].OnDestroy?.Invoke();
+            }
+        }
+        foreach(var v in remove)
+        {
+            cores.Remove(v);
+        };
         accum.Dispose();
         unique_colonies.Dispose();
     }
@@ -93,9 +124,19 @@ public partial class ColonySystem : SystemBase
         return core_id;
     }
 
+    public int ColonyCount()
+    {
+        return core_id;
+    }
+
     public CoreData GetCore(int id)
     {
         return cores[id];
+    }
+
+    public bool HasCore(int id)
+    {
+        return cores.ContainsKey(id);
     }
 
     public void UpdateCore(int id, CoreData core)
@@ -130,7 +171,8 @@ public partial class ColonySystem : SystemBase
                     cell.health -= cell.fire;
                 if(can_uv)
                     cell.health -= cell.uv / 1000.0f;
-                if(cell.health < cell.max_health)
+                cell.health -= cell.death;
+                if (cell.health < cell.max_health)
                 {
                     if(cell.consume > 0)
                     {
@@ -143,6 +185,7 @@ public partial class ColonySystem : SystemBase
                 cell.was_uv = cell.uv > 0;
                 cell.fire = 0;
                 cell.uv = 0;
+                cell.death = 0;
                 cells[i] = cell;
 
                 var translation = translations[i];

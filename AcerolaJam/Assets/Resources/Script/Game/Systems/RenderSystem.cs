@@ -29,8 +29,8 @@ public partial class RenderSystem : SystemBase
     string offsetInstanceName = "_FrameData";
     int maxRenderCount = 1023;
 
-    NativeArray<float4x4> render_trs = new(1024, Allocator.Persistent);
-    NativeArray<float4> render_details = new(1024, Allocator.Persistent);
+    NativeArray<float4x4> render_trs;
+    NativeArray<float4> render_details;
 
     int texture_counter;
     int anim_counter;
@@ -42,6 +42,16 @@ public partial class RenderSystem : SystemBase
     protected override void OnCreate()
     {
         handle = this;
+        if (render_trs.IsCreated)
+            render_trs.Dispose();
+        if (render_details.IsCreated)
+            render_details.Dispose();
+        if(anim_frames != null)
+        {
+            foreach (var value in anim_frames.Values)
+                value.Dispose();
+        }
+
         query_static = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform, RenderComponent>().Build(this);
         query_animated = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform, TimeOffsetComponent, AnimatedRenderComponent>().Build(this);
         texture_map = new();
@@ -50,13 +60,14 @@ public partial class RenderSystem : SystemBase
         texture_counter = 1;
         anim_counter = 1;
 
+        render_trs = new(1024, Allocator.Persistent);
+        render_details = new(1024, Allocator.Persistent);
+
         mesh = MeshMaker.Create(20, 20);
         mat = Resources.Load<Material>("Material/CellMaterial");
         inputDatas = new Vector4[maxRenderCount];
         matrixes = new Matrix4x4[maxRenderCount];
         block = new MaterialPropertyBlock();
-        render_trs = new(1024, Allocator.Persistent);
-        render_details = new(1024, Allocator.Persistent);
     }
 
     protected override void OnDestroy()
