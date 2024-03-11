@@ -1,6 +1,6 @@
-﻿using Mono.Cecil;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
@@ -11,8 +11,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
-using UnityEditor;
-using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
@@ -27,6 +25,7 @@ public partial class ColonySystem : SystemBase
 
     ComponentTypeHandle<LocalTransform> read_write_transform_handle;
     ComponentTypeHandle<CellComponent> read_write_cell_handle;
+    public static bool player_follow_mouse;
 
     Dictionary<int, CoreData> cores;
     int core_id;
@@ -84,10 +83,17 @@ public partial class ColonySystem : SystemBase
                 can_burn = !data.fire_immunity, can_uv = !data.uv_immunity};
                 cell.Run(query);
 
-                data.center = accum.Value / entity_count;
+                float2 new_center = accum.Value / entity_count;
+                if(math.distancesq(data.center, new_center) > 0.1f)
+                {
+                    data.center = math.lerp(data.center, new_center, 0.1f);
+                } else
+                {
+                    data.center = new_center;
+                }
                 data.cells = entity_count;
 
-                if (component.player_colony)
+                if (component.player_colony && player_follow_mouse)
                 {
                     UnityEngine.Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     Vector3 dir = ray.direction.normalized;
@@ -101,7 +107,7 @@ public partial class ColonySystem : SystemBase
         }
 
         List<int> remove = new();
-        foreach(var v in cores.Keys)
+        foreach(var v in cores.Keys.ToArray())
         {
             if(!hits.Contains(v))
             {

@@ -51,10 +51,13 @@ public class MapCameraController : MonoBehaviour
         }
 
         transform.position = transform.position + (new Vector3(delta.x, delta.y, 0) * Time.deltaTime);
-
-        polygonCollider = virtual_camera.GetComponent<CinemachineConfiner2D>().m_BoundingShape2D;
-        if (!polygonCollider.OverlapPoint(transform.position)) {
-            transform.position = polygonCollider.ClosestPoint(transform.position);
+        if (virtual_camera.HasComponent<CinemachineConfiner2D>())
+        {
+            polygonCollider = virtual_camera.GetComponent<CinemachineConfiner2D>().m_BoundingShape2D;
+            if (!polygonCollider.OverlapPoint(transform.position))
+            {
+                transform.position = polygonCollider.ClosestPoint(transform.position);
+            }
         }
     }
 }

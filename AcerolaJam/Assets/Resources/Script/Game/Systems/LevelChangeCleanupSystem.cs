@@ -1,17 +1,15 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEditor.Search;
 using UnityEngine.SceneManagement;
 
-
-
-[UpdateInGroup(typeof(PresentationSystemGroup))]
 public struct SceneDestroyFlagComponent : IComponentData { }
 
+[UpdateInGroup(typeof(InitializationSystemGroup))]
+[UpdateBefore(typeof(UpdateWorldTimeSystem))]
 public partial class LevelChangeCleanupSystem : SystemBase
 {
-    private EntityQuery destroyQuery = default;
+    private static EntityQuery destroyQuery = default;
 
     protected override void OnCreate()
     {
@@ -26,6 +24,11 @@ public partial class LevelChangeCleanupSystem : SystemBase
 
     protected override void OnUpdate()
     {
+    }
+
+    public static void ForceClean()
+    {
+        World.DefaultGameObjectInjectionWorld.EntityManager.DestroyEntity(destroyQuery);
     }
 
     private void RealUpdateOnSceneChange(Scene unloaded)

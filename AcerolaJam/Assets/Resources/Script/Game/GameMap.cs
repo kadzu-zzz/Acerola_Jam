@@ -1,7 +1,9 @@
+using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
+using TMPro;
 using Unity.Entities;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -16,6 +18,13 @@ public class GameMap : MonoBehaviour
     public TMPro.TextMeshProUGUI title_text, condition_text;
 
     public GameObject GameOverUI;
+    public GameObject GameVictoryUI;
+    public TMPro.TextMeshProUGUI victory_text;
+
+    public GameObject lookatfocus;
+    public PolygonCollider2D level_bounds;
+
+    public CinemachineVirtualCamera colony_camera, level_camera;
 
     public static int level = 0;
     GameLevel current;
@@ -24,23 +33,48 @@ public class GameMap : MonoBehaviour
     public bool check = true;
 
     public float delay = 4.5f;
+    bool second_delay = false;
 
     void Start()
     {
         Instance = this;
         level = TransferToLevel.int_level;
+        ColonySystem.player_follow_mouse = false;
         current = GameLevels.GetLevel(level);
         current.Setup(this);
-
+        var v = Player().center;
+        lookatfocus.transform.SetPositionAndRotation(new Vector3(v.x, v.y, 0.0f), Quaternion.identity);
         title_text.SetText(current.name);
+        victory_text.SetText(current.victory_text);
+        RenderSystem.eye_bounds = eye_zone;
+
+        level_camera.Priority = 20;
+        colony_camera.Priority = 10;
 
         current.CheckVictory(this);
     }
 
+    public void SetLevelCameraView(Vector3 min, Vector3 max)
+    {    
+        Vector3 center = (min + max) / 2;
+        level_camera.transform.LookAt(center);
+
+        float boundsWidth = max.x - min.x;
+        float halfFOV = (level_camera.m_Lens.FieldOfView / 2) * Mathf.Deg2Rad;
+        float distance = boundsWidth / (2 * Mathf.Tan(halfFOV));
+
+        Vector3 direction = (level_camera.transform.position - center).normalized;
+        level_camera.transform.position = center - direction * -distance;
+    }
 
     public CoreData Player()
     {
         return ColonySystem.handle.GetCore(1);
+    }
+
+    public void UpdatePlayer(CoreData c)
+    {
+        ColonySystem.handle.UpdateCore(1, c);
     }
 
     public CoreData GetCore(int core)
@@ -65,6 +99,17 @@ public class GameMap : MonoBehaviour
         if (delay > 0)
         {
             delay -= Time.deltaTime;
+            if (delay < 0 && ! second_delay)
+            {
+                delay += 3.0f;
+                second_delay = true;
+                level_camera.Priority = 10;
+                colony_camera.Priority = 20;
+            }
+            if(delay < 0 && second_delay)
+            {
+                ColonySystem.player_follow_mouse = true;
+            }
             return;
         }
 
@@ -74,19 +119,29 @@ public class GameMap : MonoBehaviour
             GameOverUI.SetActive(true);
             return;
         }
+        lookatfocus.transform.position = new Vector3(GetCore(1).center.x, GetCore(1).center.y, 0);
         win_check -= Time.deltaTime;
         if (win_check < 0.0f)
         {
-            win_check += 1.0f;
+            win_check += 0.05f;
             if(current.CheckVictory(this))
             {
-                MapSceneSelection.first_complete = (GameManager.Instance().data.level_progress < level);
-                MapSceneSelection.level_complete = level;
-                GameManager.Instance().data.level_progress = Mathf.Max(level, GameManager.Instance().data.level_progress);
-                SceneManager.LoadScene("MapScene");
+                check = false;
+                GameVictoryUI.SetActive(true);
+                return;
             }
         }
     }
+
+    public void UI_VictoryMap()
+    {
+        check = false;
+        MapSceneSelection.first_complete = (GameManager.Instance().data.level_progress < level);
+        MapSceneSelection.level_complete = level;
+        GameManager.Instance().data.level_progress = Mathf.Max(level, GameManager.Instance().data.level_progress);
+        SceneManager.LoadScene("MapScene");
+    }
+
 
     public void UI_Retry()
     {

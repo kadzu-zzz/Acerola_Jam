@@ -17,6 +17,11 @@ public class MapSceneSelection : MonoBehaviour
     public ChangeBounds b_lab, b_body;
     public CinematicController cine;
 
+    private void Awake()
+    {
+        LevelChangeCleanupSystem.ForceClean();
+    }
+
     void Start()
     {
         current_level = GameManager.Instance().data.level_progress;
@@ -36,15 +41,16 @@ public class MapSceneSelection : MonoBehaviour
             b.interactable = index++ <= current_level + 1;
         }
 
-        if (current_level < 7) 
+        if (current_level < 6) 
             MoveToLab();
         else
             MoveToBody();
 
         if (current_level < 6)
+        {
             ui_replay_breach.gameObject.SetActive(false);
-        if(current_level < 7)
             ui_transit_lab.gameObject.SetActive(false);
+        }
         if(current_level < 13)
             ui_replay_breakout.gameObject.SetActive(false);
 

@@ -1,4 +1,3 @@
-using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,8 +8,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEditor;
-using UnityEditor.Search;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -23,11 +21,19 @@ public partial class RenderSystem : SystemBase
 
     public Mesh mesh;
     public Material mat;
+    public Dictionary<int, Material> staticmat;
     Vector4[] inputDatas;
     Matrix4x4[] matrixes;
     MaterialPropertyBlock block;
+    MaterialPropertyBlock staticblock;
     string offsetInstanceName = "_FrameData";
     int maxRenderCount = 1023;
+
+    Material eye_material;
+    Material core_material;
+    Material core_cell_material;
+    public static PolygonCollider2D eye_bounds;
+
 
     NativeArray<float4x4> render_trs;
     NativeArray<float4> render_details;
@@ -65,9 +71,19 @@ public partial class RenderSystem : SystemBase
 
         mesh = MeshMaker.Create(20, 20);
         mat = Resources.Load<Material>("Material/CellMaterial");
+        staticmat = new ();
         inputDatas = new Vector4[maxRenderCount];
         matrixes = new Matrix4x4[maxRenderCount];
         block = new MaterialPropertyBlock();
+        staticblock = new MaterialPropertyBlock();
+
+        core_cell_material = new Material(mat);
+        core_material = new Material(mat);
+        core_material.mainTexture = Resources.Load<Texture2D>("Sprite/core_overlay");
+        eye_material = Resources.Load<Material>("Material/EyeMaterial");
+
+        core_cell_material.renderQueue++;
+        core_material.renderQueue += 2;
     }
 
     protected override void OnDestroy()
@@ -93,7 +109,6 @@ public partial class RenderSystem : SystemBase
 
                 if ((entity_count = query_static.CalculateEntityCount()) > 0)
                 {
-                    mat.mainTexture = texture_map.GetReverse(component.texture_id);
                     if (entity_count > render_trs.Length)
                     {
                         render_trs.Dispose();
@@ -117,7 +132,7 @@ public partial class RenderSystem : SystemBase
                             NativeArray<Matrix4x4>.Copy(render_trs.Reinterpret<Matrix4x4>(), i, matrixes, 0, size);
                         }
 
-                        Graphics.DrawMeshInstanced(mesh, 0, mat, matrixes, size, block);
+                        Graphics.DrawMeshInstanced(mesh, 0, staticmat[component.texture_id], matrixes, size, staticblock);
                     }
                 }
             }
@@ -167,7 +182,44 @@ public partial class RenderSystem : SystemBase
                 }
             }
 
+            if(ColonySystem.handle.HasCore(1))
+            {
+                CoreData c = ColonySystem.handle.GetCore(1);
+
+                Vector3 center = new(c.center.x, c.center.y, 0);
+
+                float time = ((float) SystemAPI.Time.ElapsedTime) - c.spawn_time;
+                var frames = anim_frames[1];
+                float animation_speed = 1.0f;
+
+                inputDatas[0] = frames[(int)(((time) % animation_speed) / (animation_speed / frames.Length))];
+                //array_render_trs[0] = Matrix4x4.TRS(center + (Vector3.forward * ((Time.time - spawn_time) % 1.25f)), Quaternion.identity, Vector3.one * render_cell.scale);
+                block.SetVectorArray("_FrameData", inputDatas);
+                Graphics.DrawMesh(mesh, Matrix4x4.TRS((center * new float3(1, 1, 0)) +
+                (math.sin(new float3(0, 0, (time)))) + new float3(0, 0, -2), Quaternion.identity, Vector3.one), core_cell_material, 0, Camera.main, 0, block);
+
+                matrixes[0] = Matrix4x4.TRS((center * new float3(1, 1, 0)) +
+                (math.sin(new float3(0, 0, (time)))) + new float3(0, 0, -4), Quaternion.identity, Vector3.one );
+                inputDatas[0] = frames[(int)(((time) % animation_speed) / (animation_speed / frames.Length))];
+                block.SetVectorArray("_FrameData", inputDatas);
+                Graphics.DrawMeshInstanced(mesh, 0, core_material, matrixes, 1, block);
+
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Vector3 dir = ray.direction.normalized;
+                float t = -(ray.origin.z) / dir.z;
+                Vector3 point = ray.origin + (dir * t);
+                Vector2 eyeLoc = Vector3.MoveTowards(center, point, (point - center).magnitude / 100.0f).XY();
+                eye_bounds.offset = center;
+                if (!eye_bounds.OverlapPoint(eyeLoc))
+                {
+                    eyeLoc = eye_bounds.ClosestPoint(eyeLoc);
+                } 
+                var p = new RenderParams(eye_material);
+                Graphics.RenderMesh(p, mesh, 0, Matrix4x4.TRS(new Vector3(eyeLoc.x, eyeLoc.y, -6F), Quaternion.identity, Vector3.one * 1.1f));
+            }
+
             unique_renders.Dispose();
+
         }
     }
 
@@ -212,6 +264,9 @@ public partial class RenderSystem : SystemBase
     {
         if (texture_map.ContainsForward(tex))
             return texture_map.GetForward(tex);
+        Material m = new Material(mat);
+        m.mainTexture = tex;
+        staticmat.Add(texture_counter, m);
         texture_map.Add(tex, texture_counter++);
         return texture_map.GetForward(tex);
     }

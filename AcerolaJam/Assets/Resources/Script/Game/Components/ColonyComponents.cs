@@ -2,6 +2,7 @@
 using System.Numerics;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 public struct CellComponent : IComponentData
 {
@@ -125,7 +126,8 @@ public struct CoreData
 
     public BlobAssetReference<Unity.Physics.Collider> collider_ref;
     public Action OnDestroy;
-    public bool player;
+    public ColonyType type;
+    public float spawn_time;
 
     public static CoreData Create(float repel_strength, float repel_radius, float cohesion_strength, float movement_strength,
         float cell_power, bool fire_immune, bool uv_immune,  Action OnDestroy)
@@ -141,7 +143,7 @@ public struct CoreData
             fire_immunity = fire_immune,
             uv_immunity = uv_immune,
             OnDestroy = OnDestroy,
-            player = false
+            spawn_time = Time.timeSinceLevelLoad
         };
     }
 }

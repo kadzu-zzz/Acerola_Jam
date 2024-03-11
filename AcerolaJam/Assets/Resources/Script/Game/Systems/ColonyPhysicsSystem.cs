@@ -23,6 +23,7 @@ public partial class ColonyPhysicsSystem : SystemBase
     ComponentTypeHandle<LocalTransform> read_only_transform_handle;
     ComponentTypeHandle<CellComponent> read_write_cell_handle;
     ComponentTypeHandle<PhysicsVelocity> read_write_velocity_handle;
+
     protected override void OnCreate()
     {
         handle = this;
@@ -62,6 +63,7 @@ public partial class ColonyPhysicsSystem : SystemBase
                     repulsion = core.repel,
                     repulsion_dist = core.repel_r,
                     time = SystemAPI.Time.DeltaTime,
+                    uv_immune = core.uv_immunity,
                     ReadOnlyTransformHandle = read_only_transform_handle,
                     ReadWriteCellHandle = read_write_cell_handle, 
                     ReadWriteVelocityHandle = read_write_velocity_handle}.Run(query);
@@ -138,8 +140,8 @@ public partial class ColonyPhysicsSystem : SystemBase
                     cell.was_impulse = false;
                     cells[i] = cell;
                 }
-                if (!uv_immune)
-                    vel.Linear *= (1.0f - cells[i].uv);
+                if (!uv_immune && (cells[i].uv > 0.0f || cells[i].was_uv))
+                    vel.Linear *= 0.2f;
                 vel.Angular = float3.zero;
 
                 velocities[i] = vel;

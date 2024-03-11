@@ -1,4 +1,3 @@
-using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -10,8 +9,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-using UnityEditor;
-using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Rendering;
 

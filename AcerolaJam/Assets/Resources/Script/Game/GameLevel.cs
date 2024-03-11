@@ -15,17 +15,19 @@ using JetBrains.Annotations;
 public class GameLevel
 {
     public readonly string name;
+    public readonly string victory_text;
     Action<GameMap> setup;
     Func<GameMap, bool> win_check;
 
     static int game_obj_count = 0;
     public static Dictionary<int, GameObject> game_obj_links = new();
 
-    public GameLevel(string name, Action<GameMap> setup, Func<GameMap, bool> win_check)
+    public GameLevel(string name, Action<GameMap> setup, Func<GameMap, bool> win_check, string victory_text = "Level Complete")
     {
         this.name = name;
         this.setup = setup;
         this.win_check = win_check;
+        this.victory_text = victory_text;
     }
 
     ~GameLevel()
@@ -56,12 +58,18 @@ public class GameLevel
         uint layer = (uint)(1 << col_id);
         var cyl = CreateCylinder(layer, ~layer);
         core.collider_ref = cyl;
-        core.player = type == ColonyType.PLAYER;
+        core.type = type;
+
+        if (type == ColonyType.UV_RES)
+            core.uv_immunity = true; 
+        if(type == ColonyType.FIRE_RES)
+            core.fire_immunity = true;
+
         ColonySystem.handle.UpdateCore(col_id, core);
 
         for (int i = 0; i < count; i++)
         {
-            SpawnCell(col_id, center, -range, range, core.player);
+            SpawnCell(col_id, center, -range, range, type);
         }
 
         return col_id;
@@ -75,7 +83,7 @@ public class GameLevel
         CoreData core = ColonySystem.handle.GetCore(colony);
         for (int i = 0; i < count; i++)
         {
-            SpawnCell(colony, core.center, -new Vector2(2.5f, 2.5f), new Vector2(2.5f, 2.5f), core.player);
+            SpawnCell(colony, core.center, -new Vector2(2.5f, 2.5f), new Vector2(2.5f, 2.5f), core.type);
         }
     }
 
@@ -92,13 +100,14 @@ public class GameLevel
         CreateTriggerEntity(center, polygon, hCopy);
         obj.transform.SetPositionAndRotation(center, Quaternion.identity);
     }
-    public static void CreateHazard(Vector2 center, List<Vector2> polygon, HazardComponent hazard, UnityEngine.Material material)
+    public static void CreateHazard(Vector2 center, List<Vector2> polygon, HazardComponent hazard, UnityEngine.Material material, bool outline = true)
     {
         CreateTriggerEntity(center, polygon, hazard);
 
         polygon.Add(polygon[0]);
         var obj = PolygonMeshFactory.CreatePolygonObject(center, polygon, material);
-        PolygonMeshFactory.CreateLineRenderObject(center, polygon, UnityEngine.Color.white, obj);
+        if(outline)
+            PolygonMeshFactory.CreateLineRenderObject(center, polygon, UnityEngine.Color.white, obj);
         obj.transform.SetPositionAndRotation(center, Quaternion.identity);
     }
 
@@ -120,19 +129,18 @@ public class GameLevel
             PolygonMeshFactory.CreateLineRenderObject(center, polygon, outline_colour).transform.SetPositionAndRotation(center, Quaternion.identity);;
         }
     }
-    static Entity SpawnCell(int core_id, Vector2 pos, Vector2 min_range, Vector2 max_range, bool player)
+    static Entity SpawnCell(int core_id, Vector2 pos, Vector2 min_range, Vector2 max_range, ColonyType typ)
     {
-        return SpawnColony(core_id, pos + new Vector2(UnityEngine.Random.Range(min_range.x, max_range.x), UnityEngine.Random.Range(min_range.y, max_range.y)), player);
+        return SpawnColony(core_id, pos + new Vector2(UnityEngine.Random.Range(min_range.x, max_range.x), UnityEngine.Random.Range(min_range.y, max_range.y)), typ);
     }
-    static Entity SpawnColony(int core_id, Vector2 position, bool player)
+    static Entity SpawnColony(int core_id, Vector2 position, ColonyType typ)
     {
-        int id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_cell"));
         EntityManager manager = World.DefaultGameObjectInjectionWorld.EntityManager;
         var archetype = World.DefaultGameObjectInjectionWorld.EntityManager.CreateArchetype(
             typeof(LocalTransform),
             typeof(LocalToWorld),
             typeof(TimeOffsetComponent),
-            typeof(AnimatedRenderComponent),
+            (typ == ColonyType.PLAYER ? typeof(AnimatedRenderComponent) : typeof(RenderComponent)),
             typeof(CellComponent),
             typeof(CoreComponent),
             typeof(PhysicsCollider),
@@ -147,21 +155,46 @@ public class GameLevel
 
         manager.AddComponentData(entity, new TimeOffsetComponent { time_offset = UnityEngine.Time.time + UnityEngine.Random.Range(-100.0f, 0.0f) });
 
-        manager.AddSharedComponentManaged(entity, new AnimatedRenderComponent
+        if (typ == ColonyType.PLAYER)
         {
-            animation_id = id,
-        });
-
-        if (!RenderSystem.handle.HasAnim(id))
-        {
-            NativeArray<float4> array = new NativeArray<float4>(4, Allocator.Persistent);
-            for (int i = 0; i < array.Length; i++)
+            int id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_cell"));
+            manager.AddSharedComponentManaged(entity, new AnimatedRenderComponent
             {
-                array[i] = new Vector4(i * 0.25f, 0.0f, 0.25f, 1.0f);
-            }
+                animation_id = id,
+            });
 
-            RenderSystem.handle.SetAnimFrame(id, array);
+            if (!RenderSystem.handle.HasAnim(id))
+            {
+                NativeArray<float4> array = new NativeArray<float4>(4, Allocator.Persistent);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    array[i] = new Vector4(i * 0.25f, 0.0f, 0.25f, 1.0f);
+                }
+
+                RenderSystem.handle.SetAnimFrame(id, array);
+            }
         }
+        else
+        {
+            int id = 0;
+            switch(typ)
+            {
+                case ColonyType.UV_RES:
+                    id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_enemy_triangle"));
+                    break;
+                case ColonyType.FIRE_RES:
+                    id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_enemy_square"));
+                    break;
+                default:
+                    break;
+            }
+            
+            manager.AddSharedComponentManaged(entity, new RenderComponent
+            {
+                texture_id = id
+            });
+        }
+         
 
         manager.AddComponentData(entity, new CellComponent
         {
@@ -184,7 +217,7 @@ public class GameLevel
         manager.AddSharedComponentManaged(entity, new CoreComponent
         {
             id = core_id,
-            player_colony = player
+            player_colony = typ == ColonyType.PLAYER
         });
 
         manager.AddSharedComponentManaged(entity, new PhysicsWorldIndex
@@ -378,5 +411,24 @@ public class GameLevel
         }
 
         return points;
+    }
+
+    //Ordered by Inner -> Outer, Next Inner soforth
+    public static List<Vector2> CreateTorus(float inner, float outer, int divisions)
+    {
+        List<Vector2> points = new();
+
+        for (float f = 0; f < Mathf.PI * 2; f += (Mathf.PI * 2) / divisions)
+        {
+            points.Add(new Vector2((Mathf.Cos(f) * inner), Mathf.Sin(f) * inner));
+            points.Add(new Vector2((Mathf.Cos(f) * outer), Mathf.Sin(f) * outer));
+        }
+
+        return points;
+    }
+
+    public static Vector2 AngleOffset(float angle, float offset)
+    {
+        return new Vector2(math.cos(angle * math.TORADIANS) * offset, math.sin(angle * math.TORADIANS) * offset);
     }
 }
