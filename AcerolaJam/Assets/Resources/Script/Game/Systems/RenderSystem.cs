@@ -48,6 +48,7 @@ public partial class RenderSystem : SystemBase
     protected override void OnCreate()
     {
         handle = this;
+
         if (render_trs.IsCreated)
             render_trs.Dispose();
         if (render_details.IsCreated)
@@ -81,6 +82,8 @@ public partial class RenderSystem : SystemBase
         core_material = new Material(mat);
         core_material.mainTexture = Resources.Load<Texture2D>("Sprite/core_overlay");
         eye_material = Resources.Load<Material>("Material/EyeMaterial");
+
+        core_cell_material.mainTexture = Resources.Load<Texture2D>("Sprite/colony_cell");
 
         core_cell_material.renderQueue++;
         core_material.renderQueue += 2;
@@ -151,7 +154,14 @@ public partial class RenderSystem : SystemBase
 
                 if ((entity_count = query_animated.CalculateEntityCount()) > 0)
                 {
-                    mat.mainTexture = texture_map.GetReverse(component.animation_id);
+                    var anim = ColonySystem.handle.GetCore(1);
+
+                    int animation_offset = 0;
+                    if (anim.uv_immunity)
+                        animation_offset++;
+                    if (anim.fire_immunity)
+                        animation_offset += 2;
+                    mat.mainTexture = texture_map.GetReverse(component.animation_id + animation_offset);
                     if (entity_count > render_trs.Length)
                     {
                         render_trs.Dispose();

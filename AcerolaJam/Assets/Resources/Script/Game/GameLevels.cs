@@ -63,10 +63,10 @@ public class GameLevels
                         GameLevel.CreateFoodHazard(new Vector2(-200.0f, -200.0f),
                             GameLevel.CreateCircle(30, 16),
                             HazardComponent.CreateFood(100, -1), Resources.Load<UnityEngine.Material>("Material/FoodMaterial"));
-                        GameLevel.CreateFoodHazard(new Vector2(-200.0f, 200.0f),
+                        GameLevel.CreateFoodHazard(new Vector2(200.0f, -200.0f),
                             GameLevel.CreateCircle(30, 16),
                             HazardComponent.CreateFood(100, -1), Resources.Load<UnityEngine.Material>("Material/FoodMaterial"));
-                        GameLevel.CreateFoodHazard(new Vector2(-300.0f, 0.0f),
+                        GameLevel.CreateFoodHazard(new Vector2(0.0f, -300.0f),
                             GameLevel.CreateCircle(60, 32),
                             HazardComponent.CreateFood(200, -1), Resources.Load<UnityEngine.Material>("Material/FoodMaterial"));
                     },
@@ -87,7 +87,11 @@ public class GameLevels
 
                         GameLevel.CreateColony(new Vector2(0, 200), 50, new Vector2(10.0f, 10.0f), ColonyType.UV_RES, CoreData.Create(
                             250, 50, 5, 40,
-                            1.0f, false, true, () => { }));
+                            1.0f, false, true, () => {
+                                var p = map.Player();
+                                p.uv_immunity = true;
+                                map.UpdatePlayer(p);
+                            }));
 
                         GameLevel.CreatePetriDishBorder(300.0f, 32);
 
@@ -179,10 +183,10 @@ public class GameLevels
 
                         GameLevel.CreateHazard(new Vector2(0, 0),
                             new List<Vector2>{
+                                GameLevel.AngleOffset(135, 400),
+                                GameLevel.AngleOffset(140, 400),
+                                GameLevel.AngleOffset(145, 400),
                                 GameLevel.AngleOffset(0, 30),
-                                GameLevel.AngleOffset(325, 400),
-                                GameLevel.AngleOffset(330, 400),
-                                GameLevel.AngleOffset(335, 400),
                                 GameLevel.AngleOffset(0, 90)
                             },
                             HazardComponent.CreateUV(0.5f), Resources.Load<UnityEngine.Material>("Material/UVMaterial"));
@@ -198,10 +202,10 @@ public class GameLevels
 
                         GameLevel.CreateHazard(new Vector2(0, 0),
                             new List<Vector2>{
-                                GameLevel.AngleOffset(135, 400),
-                                GameLevel.AngleOffset(140, 400),
-                                GameLevel.AngleOffset(145, 400),
                                 GameLevel.AngleOffset(0, 30),
+                                GameLevel.AngleOffset(325, 400),
+                                GameLevel.AngleOffset(330, 400),
+                                GameLevel.AngleOffset(335, 400),
                                 GameLevel.AngleOffset(0, 30) + GameLevel.AngleOffset(45, 60)
                             },
                             HazardComponent.CreateFire(0.025f), Resources.Load<UnityEngine.Material>("Material/BurningMaterial"));
@@ -256,6 +260,8 @@ public class GameLevels
                             1.0f, false, true, () => {
                                 var p = map.Player();
                                 p.fire_immunity = true;
+                                p.cohesion = 5;
+                                p.speed = 40;
                                 map.UpdatePlayer(p);
                             }));
 

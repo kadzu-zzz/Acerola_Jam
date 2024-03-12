@@ -29,6 +29,8 @@ public partial class ColonyPhysicsSystem : SystemBase
         handle = this;
         query = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform, CoreComponent>().WithAllRW<PhysicsVelocity>().Build(this);
 
+        RequireForUpdate<CoreComponent>();
+
         read_only_transform_handle = GetComponentTypeHandle<LocalTransform>(true);
         read_write_cell_handle = GetComponentTypeHandle<CellComponent>(false);
         read_write_velocity_handle = GetComponentTypeHandle<PhysicsVelocity>(false);

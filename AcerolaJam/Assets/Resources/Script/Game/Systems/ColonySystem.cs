@@ -18,6 +18,8 @@ using UnityEngine.SceneManagement;
 
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(CellCleanupSystem))]
+[UpdateBefore(typeof(PhysicsSystemGroup))]
 public partial class ColonySystem : SystemBase
 {
     public static ColonySystem handle;
@@ -55,7 +57,6 @@ public partial class ColonySystem : SystemBase
 
     protected override void OnUpdate()
     {
-        Dependency.Complete();
         NativeList<CoreComponent> unique_colonies;
         EntityManager.GetAllUniqueSharedComponents(out unique_colonies, Allocator.Temp);
         int entity_count;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
 using TMPro;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -19,6 +20,7 @@ public class GameMap : MonoBehaviour
 
     public GameObject GameOverUI;
     public GameObject GameVictoryUI;
+    public GameObject GameEscapeUI;
     public TMPro.TextMeshProUGUI victory_text;
 
     public GameObject lookatfocus;
@@ -54,6 +56,10 @@ public class GameMap : MonoBehaviour
         current.CheckVictory(this);
     }
 
+    private void OnDestroy()
+    {
+        Time.timeScale = 1.0f;
+    }
     public void SetLevelCameraView(Vector3 min, Vector3 max)
     {    
         Vector3 center = (min + max) / 2;
@@ -131,6 +137,38 @@ public class GameMap : MonoBehaviour
                 return;
             }
         }
+
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            bool state = !GameEscapeUI.gameObject.activeInHierarchy;
+
+            GameEscapeUI.SetActive(state);
+
+            Time.timeScale = state ? 0.0f : 1.0f;
+        }
+
+        if((Input.GetKey(KeyCode.F1) && Input.GetKeyDown(KeyCode.S)) ||
+            (Input.GetKeyDown(KeyCode.F1) && Input.GetKey(KeyCode.S)))
+        {
+            if (this.HasCore(1) && this.Player().cells <= 1000)
+            {
+                EntityCommandBuffer buffer = new EntityCommandBuffer(Allocator.Temp);
+                GameLevel.GenerateCells(buffer, 1, 20);
+                buffer.Playback(World.DefaultGameObjectInjectionWorld.EntityManager);
+                buffer.Dispose();
+            }
+        }
+        if ((Input.GetKey(KeyCode.F1) && Input.GetKeyDown(KeyCode.T)) ||
+            (Input.GetKeyDown(KeyCode.F1) && Input.GetKey(KeyCode.T)))
+        {
+            check = false;
+            GameVictoryUI.SetActive(true);
+        }
+    }
+
+    public void FixTimeScale()
+    {
+        Time.timeScale = 1.0f;
     }
 
     public void UI_VictoryMap()

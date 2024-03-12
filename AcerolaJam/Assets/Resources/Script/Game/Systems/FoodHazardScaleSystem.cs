@@ -18,6 +18,11 @@ using UnityEngine.Rendering;
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 public partial class FoodHazardScaleSystem : SystemBase
 {
+    protected override void OnCreate()
+    {
+        RequireForUpdate<HazardComponent>();
+    }
+
     protected override void OnUpdate()
     {
         Dependency.Complete();

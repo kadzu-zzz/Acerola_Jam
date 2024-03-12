@@ -13,6 +13,7 @@ using Unity.Transforms;
 
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(PhysicsSystemGroup))]
 public partial struct ColonyTriggerSystem : ISystem
 {
     EntityQuery query;
@@ -23,6 +24,9 @@ public partial struct ColonyTriggerSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         query = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform>().WithAny<HazardComponent, CellComponent>().Build(state.EntityManager);
+
+        state.RequireForUpdate<CoreComponent>();
+
         read_write_cell_lookup = SystemAPI.GetComponentLookup<CellComponent>(false);
         read_write_hazard_lookup = SystemAPI.GetComponentLookup<HazardComponent>(false);
         read_write_transform = SystemAPI.GetComponentLookup<LocalTransform>(false);
@@ -82,8 +86,8 @@ public partial struct ColonyTriggerSystem : ISystem
             {
                 if (hazard_lookup.HasComponent(collisionEvent.EntityA))
                 {
-                    RefRW<HazardComponent> comp = hazard_lookup.GetRefRW(collisionEvent.EntityB);
-                    RefRW<CellComponent> cell = cell_lookup.GetRefRW(collisionEvent.EntityA);
+                    RefRW<HazardComponent> comp = hazard_lookup.GetRefRW(collisionEvent.EntityA);
+                    RefRW<CellComponent> cell = cell_lookup.GetRefRW(collisionEvent.EntityB);
                     cell.ValueRW.uv += comp.ValueRO.uv;
                     cell.ValueRW.fire += comp.ValueRO.fire;
                     cell.ValueRW.death += comp.ValueRO.death;

@@ -14,8 +14,12 @@ public class MapSceneSelection : MonoBehaviour
     public Button ui_transit_lab, ui_transit_body;
     public Button ui_replay_intro, ui_replay_breach, ui_replay_breakout;
 
-    public ChangeBounds b_lab, b_body;
+    public CinemachineVirtualCamera lab_camera, body_camera;
     public CinematicController cine;
+
+    public GameObject EscapeUI;
+
+    public List<SpriteRenderer> lab_images =new List<SpriteRenderer>();
 
     private void Awake()
     {
@@ -26,7 +30,19 @@ public class MapSceneSelection : MonoBehaviour
     {
         current_level = GameManager.Instance().data.level_progress;
 
-        if(current_level == -1)
+        int index = 0;
+        foreach (Button b in level_buttons)
+        {
+            if (index++ <= current_level + 1)
+                b.gameObject.SetActive(true);
+        }
+
+        for (int i = 0; i < lab_images.Count; i++)
+        {
+            lab_images[i].gameObject.SetActive(i <= current_level + 1);
+        }
+
+        if (current_level == -1)
         {
             current_level = (GameManager.Instance().data.level_progress = 0);
 
@@ -35,11 +51,6 @@ public class MapSceneSelection : MonoBehaviour
             });
         }
 
-        int index = 0;
-        foreach(Button b in level_buttons)
-        {
-            b.interactable = index++ <= current_level + 1;
-        }
 
         if (current_level < 6) 
             MoveToLab();
@@ -74,13 +85,25 @@ public class MapSceneSelection : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            bool state = !EscapeUI.gameObject.activeInHierarchy;
+
+            EscapeUI.SetActive(state);
+        }
+    }
+
     public void MoveToBody()
     {
-        b_lab.Change();
+        lab_camera.Priority = 10;
+        body_camera.Priority = 100;
     }
 
     public void MoveToLab()
     {
-        b_body.Change();
+        lab_camera.Priority = 100;
+        body_camera.Priority = 10;
     }
 }

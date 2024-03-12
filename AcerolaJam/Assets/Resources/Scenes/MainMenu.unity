@@ -865,7 +865,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 920772381}
         m_TargetAssemblyTypeName: UIHelper, Assembly-CSharp
-        m_MethodName: UI_ChangeScene
+        m_MethodName: UI_Exit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
