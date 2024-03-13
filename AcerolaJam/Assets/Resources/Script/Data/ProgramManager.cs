@@ -12,6 +12,8 @@ public class ProgramManager : MonoBehaviour
     static ProgramManager instance = null;
 
     public ProgramDataV2 data;
+    bool is_quitting = false;
+    float quit_delay;
 
     private void Awake()
     {
@@ -27,6 +29,19 @@ public class ProgramManager : MonoBehaviour
 
         data.postLoad();
         Instantiate<GameObject>(Resources.Load<GameObject>("Prefab/Management/GameManager"));
+    }
+
+    private void Update()
+    {
+        if(is_quitting)
+        {
+            quit_delay -= Time.deltaTime;
+            if(quit_delay < 0.0f)
+            {
+                Quit();
+                is_quitting = false;
+            }
+        }
     }
 
     public void Cleanup()
@@ -52,6 +67,12 @@ public class ProgramManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         Cleanup();
+    }
+
+    public void Quit(float delay)
+    {
+        is_quitting = true;
+        quit_delay = delay;
     }
 
     public void Quit()

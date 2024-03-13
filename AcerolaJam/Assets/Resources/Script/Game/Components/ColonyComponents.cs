@@ -111,6 +111,7 @@ public struct CoreData
 {
     public float2 target;
 
+    public int id;
     public int cells;
     public float2 center;
 

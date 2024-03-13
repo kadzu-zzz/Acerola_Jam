@@ -27,7 +27,7 @@ public partial class ColonyPhysicsSystem : SystemBase
     protected override void OnCreate()
     {
         handle = this;
-        query = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform, CoreComponent>().WithAllRW<PhysicsVelocity>().Build(this);
+        query = new EntityQueryBuilder(Allocator.Temp).WithAll<LocalTransform, CoreComponent>().WithAllRW<PhysicsVelocity>().WithNone<ImmuneComponent>().Build(this);
 
         RequireForUpdate<CoreComponent>();
 

@@ -18,12 +18,14 @@ using Unity.Transforms;
 public partial struct ColonyDevourSystem : ISystem
 {
     ComponentLookup<CellComponent> read_write_cell_lookup;
+    ComponentLookup<AdiposeComponent> read_only_adipose_lookup;
 
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<CellComponent>();
         state.RequireForUpdate<SimulationSingleton>();
         read_write_cell_lookup = SystemAPI.GetComponentLookup<CellComponent>(false);
+        read_only_adipose_lookup = SystemAPI.GetComponentLookup<AdiposeComponent>(true);
     }
 
     [BurstCompile]
@@ -36,11 +38,13 @@ public partial struct ColonyDevourSystem : ISystem
         }
 
         read_write_cell_lookup.Update(ref state);
+        read_only_adipose_lookup.Update(ref state);
         var physicsWorld = SystemAPI.GetSingletonRW<PhysicsWorldSingleton>().ValueRW.PhysicsWorld;
 
         state.Dependency = new CellCollisionEvents
         {
             cell_lookup = read_write_cell_lookup,
+            adipose_lookup = read_only_adipose_lookup,
         }.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), ref physicsWorld, state.Dependency);
         state.CompleteDependency();
     }
@@ -49,6 +53,8 @@ public partial struct ColonyDevourSystem : ISystem
     public partial struct CellCollisionEvents : IBodyPairsJob
     {
         public ComponentLookup<CellComponent> cell_lookup;
+        [ReadOnly]
+        public ComponentLookup<AdiposeComponent> adipose_lookup;
 
         public void Execute(ref ModifiableBodyPair pair)
         {
@@ -62,7 +68,17 @@ public partial struct ColonyDevourSystem : ISystem
                     RefRW<CellComponent> cella = cell_lookup.GetRefRW(pair.EntityA);
                     RefRW<CellComponent> cellb = cell_lookup.GetRefRW(pair.EntityB);
 
-                    if (cella.ValueRO.belongs_to != cellb.ValueRO.belongs_to)
+                    if(adipose_lookup.HasComponent(pair.EntityA))
+                    {
+                        cella.ValueRW.health -= cellb.ValueRO.power;
+                        cellb.ValueRW.consume += cellb.ValueRO.power * 10;
+                    } 
+                    else if(adipose_lookup.HasComponent(pair.EntityB))
+                    {
+                        cellb.ValueRW.health -= cella.ValueRO.power;
+                        cella.ValueRW.consume += cella.ValueRO.power * 10;
+                    }
+                    else if (cella.ValueRO.belongs_to != cellb.ValueRO.belongs_to)
                     {
                         cella.ValueRW.health -= cellb.ValueRO.power;
                         cellb.ValueRW.health -= cella.ValueRO.power;

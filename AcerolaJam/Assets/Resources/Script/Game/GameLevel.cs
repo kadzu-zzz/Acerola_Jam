@@ -382,6 +382,159 @@ public class GameLevel
         return entity;
     }
 
+    static BlobAssetReference<Unity.Physics.Collider> immune_cell_collider;
+    static bool immune_cell_collider_valid = false;
+
+    public static Entity CreateWhiteBloodCell(Vector2 position)
+    {
+        EntityManager manager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        var archetype = World.DefaultGameObjectInjectionWorld.EntityManager.CreateArchetype(
+            typeof(LocalTransform),
+            typeof(LocalToWorld),
+            typeof(RenderComponent),
+            typeof(CellComponent),
+            typeof(ImmuneComponent),
+            typeof(PhysicsCollider),
+            typeof(PhysicsWorldIndex),
+            typeof(PhysicsVelocity),
+            typeof(PhysicsMass),
+            typeof(SceneDestroyFlagComponent));
+        var entity = manager.CreateEntity(archetype);
+        // 3
+        AddCommonImmunityComponents(position, entity, manager, "Sprite/enemy_white_blood");
+
+        manager.AddSharedComponentManaged(entity, new ImmuneComponent
+        {
+            behaviour_type = 1,
+            attack_range_squared = 40*40
+        });
+
+        return entity;
+    }
+    public static Entity CreateAdipose(Vector2 position)
+    {
+        EntityManager manager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        var archetype = World.DefaultGameObjectInjectionWorld.EntityManager.CreateArchetype(
+            typeof(LocalTransform),
+            typeof(LocalToWorld),
+            typeof(RenderComponent),
+            typeof(CellComponent),
+            typeof(AdiposeComponent),
+            typeof(ImmuneComponent),
+            typeof(PhysicsCollider),
+            typeof(PhysicsWorldIndex),
+            typeof(PhysicsVelocity),
+            typeof(PhysicsMass),
+            typeof(SceneDestroyFlagComponent));
+        var entity = manager.CreateEntity(archetype);
+        // 3
+        AddCommonImmunityComponents(position, entity, manager, "Sprite/enemy_adipose");
+
+        manager.AddComponentData(entity, new AdiposeComponent
+        {            
+        });
+
+        manager.AddSharedComponentManaged(entity, new ImmuneComponent
+        {
+            behaviour_type = 2,
+            attack_range_squared = 40 * 40
+        });
+
+        return entity;
+    }
+    public static Entity CreatePlatelet(Vector2 position, Vector2 start, Vector2 end)
+    {
+        EntityManager manager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        var archetype = World.DefaultGameObjectInjectionWorld.EntityManager.CreateArchetype(
+            typeof(LocalTransform),
+            typeof(LocalToWorld),
+            typeof(RenderComponent),
+            typeof(CellComponent),
+            typeof(PlateletComponent),
+            typeof(ImmuneComponent),
+            typeof(PhysicsCollider),
+            typeof(PhysicsWorldIndex),
+            typeof(PhysicsVelocity),
+            typeof(PhysicsMass),
+            typeof(SceneDestroyFlagComponent));
+        var entity = manager.CreateEntity(archetype);
+        // 3
+        AddCommonImmunityComponents(position, entity, manager, "Sprite/enemy_platelet");
+
+        manager.AddComponentData(entity, new PlateletComponent
+        {
+            hold_a = start,
+            hold_b = end
+        });
+
+        manager.AddSharedComponentManaged(entity, new ImmuneComponent
+        {
+            behaviour_type = 3,
+            attack_range_squared = 40 * 40
+        });
+
+        return entity;
+    }
+
+    static void AddCommonImmunityComponents(Vector2 position, Entity entity, EntityManager manager, string renderable)
+    {
+        if (!immune_cell_collider_valid)
+        {
+            uint layer = (uint)((uint)1 << 31);
+            var cyl = CreateCylinder(layer, ~layer);
+            immune_cell_collider = cyl;
+            immune_cell_collider_valid = true;
+        }
+        manager.AddComponentData(entity, new LocalTransform { Position = new Vector3(position.x, position.y, 0.0f), Rotation = Quaternion.identity, Scale = 1f });
+
+        manager.AddSharedComponentManaged(entity, new RenderComponent
+        {
+            texture_id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>(renderable))
+        });
+
+        manager.AddComponentData(entity, new CellComponent
+        {
+            belongs_to = -1,
+            health = 1.0f,
+            max_health = 1.0f,
+
+            power = 0.1f,
+            consume = 0.0f,
+            uv = 0.0f,
+            fire = 0.0f,
+            impulse = float2.zero,
+
+            was_burning = false,
+            was_consume = false,
+            was_impulse = false,
+            was_uv = false
+        });
+        manager.AddSharedComponentManaged(entity, new PhysicsWorldIndex
+        {
+            Value = 0
+        });
+
+        manager.SetComponentData(entity, new PhysicsCollider
+        {
+            Value = immune_cell_collider
+        });
+
+        manager.AddComponentData(entity, new PhysicsVelocity
+        {
+            Linear = float3.zero,
+            Angular = float3.zero
+        });
+
+        unsafe
+        {
+            Unity.Physics.Collider* colliderPtr = (Unity.Physics.Collider*)immune_cell_collider.GetUnsafePtr();
+            var mass = PhysicsMass.CreateDynamic(colliderPtr->MassProperties, 1.0f);
+            mass.InverseInertia = float3.zero;
+
+            manager.AddComponentData(entity, mass);
+        }
+    }
+
     static Entity CreateBlockingEntity(Vector2 center, List<Vector2> points)
     {
         EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;

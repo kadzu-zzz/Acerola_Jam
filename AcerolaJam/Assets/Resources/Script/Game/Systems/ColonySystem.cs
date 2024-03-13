@@ -127,6 +127,7 @@ public partial class ColonySystem : SystemBase
 
     public int NewCore(CoreData core)
     {
+        core.id = core_id + 1;
         cores.Add(++core_id, core);
         return core_id;
     }
@@ -146,6 +147,10 @@ public partial class ColonySystem : SystemBase
         return cores.ContainsKey(id);
     }
 
+    public List<CoreData> GetColonies()
+    {
+        return cores.Values.ToList();
+    }
     public void UpdateCore(int id, CoreData core)
     {
         cores[id] = core;

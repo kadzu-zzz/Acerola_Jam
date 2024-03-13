@@ -33,8 +33,10 @@ public class MapSceneSelection : MonoBehaviour
         int index = 0;
         foreach (Button b in level_buttons)
         {
-            if (index++ <= current_level + 1)
+            if (index++ <= current_level + 1) 
                 b.gameObject.SetActive(true);
+            if (index == current_level + 2)
+                b.GetComponent<SlightMovement>().Set(4, 2);
         }
 
         for (int i = 0; i < lab_images.Count; i++)

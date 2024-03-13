@@ -15,4 +15,8 @@ public class UIHelper : MonoBehaviour
     {
         ProgramManager.Instance().Quit();
     }
+    public void UI_Exit_Delay(float delay)
+    {
+        ProgramManager.Instance().Quit(delay);
+    }
 }

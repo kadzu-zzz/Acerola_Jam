@@ -53,6 +53,15 @@ public partial class CellCleanupSystem : SystemBase
                 GameLevel.GenerateCells(spawn_buffer, i + 1, count[i]);
         }
 
+        if(!destroy_buffer.IsEmpty)
+        {
+            AudioHelper.StaticEffectRandom(GameMap.Instance.pop_sounds);
+        }
+        if(!spawn_buffer.IsEmpty)
+        {
+            AudioHelper.StaticEffectRandom(GameMap.Instance.grow_sounds);
+        }
+
         count.Dispose();
         destroy_buffer.Playback(EntityManager);
         destroy_buffer.Dispose();
@@ -71,8 +80,8 @@ public partial class CellCleanupSystem : SystemBase
             if (cell.ValueRO.health <= 0.0f)
             {
                 buffer.DestroyEntity(entityInQueryIndex, e);
-            } 
-            else if(cell.ValueRO.health >= 1.0f && cell.ValueRO.consume >= 1.0f)
+            }
+            else if (cell.ValueRO.belongs_to > 0 && cell.ValueRO.belongs_to < 31 && cell.ValueRO.health >= 1.0f && cell.ValueRO.consume >= 1.0f)
             {
                 cell.ValueRW.consume -= 1.0f;
                 count[cell.ValueRO.belongs_to - 1]++;

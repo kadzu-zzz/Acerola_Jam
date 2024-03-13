@@ -372,6 +372,36 @@ public class GameLevels
                     },
                     "Containment Breached"
                     );
+            case 7:
+                return new GameLevel(
+                    "Infection",
+                    (GameMap map) =>
+                    {
+                        GameLevel.CreateColony(Vector2.zero, 250, new Vector2(10.0f, 10.0f), ColonyType.PLAYER, CoreData.Create(
+                            250, 50, 15, 100,
+                            1.0f, false, false, () => { }));
+                        
+                        map.SetLevelCameraView(new Vector3(-250, -250, 0), new Vector3(250, 250, 0));
+
+                        for(int i = 0; i < 100; i++)
+                        {
+                            GameLevel.CreateWhiteBloodCell(new Vector2(250, 250) + new Vector2(100,100) * new Vector2(UnityEngine.Random.Range(-1.0f,1.0f), UnityEngine.Random.Range(-1.0f, 1.0f)));
+                        }
+                        for (int i = 0; i < 100; i++)
+                        {
+                            GameLevel.CreateAdipose(new Vector2(-250, -250) + new Vector2(100, 100) * new Vector2(UnityEngine.Random.Range(-1.0f, 1.0f), UnityEngine.Random.Range(-1.0f, 1.0f)));
+                        }
+                        for (int i = 0; i < 100; i++)
+                        {
+                            GameLevel.CreatePlatelet(new Vector2(250, 250) + new Vector2(100, 100) * new Vector2(UnityEngine.Random.Range(-1.0f, 1.0f), UnityEngine.Random.Range(-1.0f, 1.0f)),
+                                new Vector2(200, 150), new Vector2(150, 200));
+                        }
+                    },
+                    (GameMap map) =>
+                    {
+                        return false;
+                    },
+                    "Inflitration Successful");
         }
         return null;
     }

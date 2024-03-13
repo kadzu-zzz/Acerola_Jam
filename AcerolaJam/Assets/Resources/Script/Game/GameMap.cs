@@ -28,6 +28,9 @@ public class GameMap : MonoBehaviour
 
     public CinemachineVirtualCamera colony_camera, level_camera;
 
+    public AudioClip[] pop_sounds;
+    public AudioClip[] grow_sounds;
+
     public static int level = 0;
     GameLevel current;
 
