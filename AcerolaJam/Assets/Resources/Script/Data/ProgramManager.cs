@@ -71,6 +71,8 @@ public class ProgramManager : MonoBehaviour
 
     public void Quit(float delay)
     {
+        if (is_quitting)
+            return;
         is_quitting = true;
         quit_delay = delay;
     }

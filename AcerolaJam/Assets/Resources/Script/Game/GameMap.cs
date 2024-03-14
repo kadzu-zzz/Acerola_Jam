@@ -64,16 +64,26 @@ public class GameMap : MonoBehaviour
         Time.timeScale = 1.0f;
     }
     public void SetLevelCameraView(Vector3 min, Vector3 max)
-    {    
-        Vector3 center = (min + max) / 2;
-        level_camera.transform.LookAt(center);
+    {
+        Vector3 targetCenter = min + ((max - min) / 2.0f);
 
-        float boundsWidth = max.x - min.x;
-        float halfFOV = (level_camera.m_Lens.FieldOfView / 2) * Mathf.Deg2Rad;
-        float distance = boundsWidth / (2 * Mathf.Tan(halfFOV));
+        var cameraTransform = level_camera.transform;
 
-        Vector3 direction = (level_camera.transform.position - center).normalized;
-        level_camera.transform.position = center - direction * -distance;
+        float distance = CalculateRequiredDistance(level_camera, min, max);
+
+        Vector3 newPosition = targetCenter - (cameraTransform.forward * distance);
+
+        cameraTransform.position = newPosition;
+    }
+    float CalculateRequiredDistance(CinemachineVirtualCamera camera, Vector3 min, Vector3 max)
+    {
+        max = max - min;
+
+        float distance = Mathf.Max(max.x, max.y, max.z) / (2.0f * Mathf.Tan(0.5f * camera.State.Lens.FieldOfView * Mathf.Deg2Rad));
+
+        distance /= camera.State.Lens.Aspect;
+
+        return distance;
     }
 
     public CoreData Player()

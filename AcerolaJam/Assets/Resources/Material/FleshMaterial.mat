@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: FleshMaterial
+  m_Shader: {fileID: 4800000, guid: 899c359f55176bb45a61ebe8c8694eb6, type: 3}
+  m_Parent: {fileID: 2100000, guid: 2d3d41e4b2449124cacb1bccf58243c8, type: 2}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _ALPHAPREMULTIPLY_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors:
+    - _Color: {r: 0.9433962, g: 0.3960484, b: 0.43350992, a: 1}
+    - _Colour: {r: 0.9245283, g: 0.3901925, b: 0.3794055, a: 0}
+    - _Peak_Color: {r: 0.79607844, g: 0.16862743, b: 0.19332018, a: 0}
+    - _Pit_Color: {r: 0.5471698, g: 0.23487006, b: 0.26260346, a: 1}
+  m_BuildTextureStacks: []

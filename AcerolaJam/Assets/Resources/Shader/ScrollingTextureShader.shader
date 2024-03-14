@@ -45,13 +45,13 @@ Shader "Kadzu/ScrollingTextureShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 float3 worldPosition = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.uv = worldPosition.xy / _TileSize;
+                o.uv = (worldPosition.xy + float2(_Time.x * _ScrollSpeedX, _Time.x * _ScrollSpeedY)) / _TileSize;
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             { 
-                float2 scrolledUV = i.uv + float2(_Time.y * _ScrollSpeedX, _Time.y * _ScrollSpeedY);
+                float2 scrolledUV = i.uv;
                 return tex2D(_MainTex, scrolledUV) * _Colour;
             }
             ENDCG

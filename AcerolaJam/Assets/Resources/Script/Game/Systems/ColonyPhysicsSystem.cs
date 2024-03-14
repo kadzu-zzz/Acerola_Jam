@@ -147,6 +147,13 @@ public partial class ColonyPhysicsSystem : SystemBase
                 vel.Angular = float3.zero;
 
                 velocities[i] = vel;
+
+                if (math.distance(translations[i].Position, center) >= 150.0f + movement)
+                {
+                    var v = cells[i];
+                    v.health -= 0.01f;
+                    cells[i] = v;
+                }
             }
         }
     }

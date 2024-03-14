@@ -19,4 +19,9 @@ public class UIHelper : MonoBehaviour
     {
         ProgramManager.Instance().Quit(delay);
     }
+
+    public void UI_OpenURL(string url)
+    {
+        Application.OpenURL(url);
+    }
 }

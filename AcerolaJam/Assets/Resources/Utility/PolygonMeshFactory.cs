@@ -46,6 +46,8 @@ public class PolygonMeshFactory
         var meshFilter = go.AddComponent<MeshFilter>();
         var meshRenderer = go.AddComponent<MeshRenderer>();
 
+        
+
         meshFilter.mesh = mesh;
         meshRenderer.material = mat;
         return go;

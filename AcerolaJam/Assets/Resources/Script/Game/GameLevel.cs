@@ -318,6 +318,9 @@ public class GameLevel
                 case ColonyType.FIRE_RES:
                     id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/colony_enemy_square"));
                     break;
+                case ColonyType.SYNAPSE:
+                    id = RenderSystem.handle.GetTextureIndex(Resources.Load<Texture2D>("Sprite/enemy_synapse"));
+                    break;
                 default:
                     break;
             }

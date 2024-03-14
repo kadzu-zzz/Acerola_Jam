@@ -47,10 +47,11 @@ public partial class ImmuneMovementSystem : SystemBase
         int entity_count;
 
         var colonies = ColonySystem.handle.GetColonies();
-        var colony_pos_array = new float2[colonies.Count];
+        var colony_pos_array = new float2[colonies.Count + 1];
         int index = 0;
         foreach (var v in colonies)
             colony_pos_array[index++] = v.center;
+
 
         NativeArray<float2> colony_positions = new NativeArray<float2>(colony_pos_array, Allocator.TempJob);
 
@@ -74,7 +75,7 @@ public partial class ImmuneMovementSystem : SystemBase
                     case 1:
                         new ApplyForces_WhiteCell {
                             colony_positions = colony_positions,
-                            attack_range_squared = 40 * 40,
+                            attack_range_squared = 180 * 180,
                             bunching_distance = 25,
                             bunching_strength = 35,
                             movement_speed = GameMap.Instance?.delay <= 0 ? 75 : 0,
@@ -145,7 +146,7 @@ public partial class ImmuneMovementSystem : SystemBase
                 int closest_index = 0;
                 float closest_dist = math.distancesq(colony_positions[0], pos);
 
-                for (int colony = 1; colony < colony_positions.Length; colony++)
+                for (int colony = 1; colony < colony_positions.Length - 1; colony++)
                 {
                     float test_dist = math.distancesq(colony_positions[colony], pos);
                     if (test_dist < closest_dist)
@@ -176,7 +177,7 @@ public partial class ImmuneMovementSystem : SystemBase
 
                 var vel = velocities[i];
                 float2 movement_force = float2.zero;
-                if (closest_dist < attack_range_squared || true)
+                if (closest_dist < attack_range_squared)
                 {
                     movement_force = math.normalizesafe(colony_positions[closest_index] - pos, float2.zero) * movement_speed;
                 }
@@ -184,7 +185,21 @@ public partial class ImmuneMovementSystem : SystemBase
                 {
                     movement_force = math.normalizesafe(new float2(vel.Linear.x, vel.Linear.y), float2.zero) * (.25f * movement_speed);
                 }
-                vel.Linear = cluster_force + new float3((movement_force), 0.0f);
+
+                vel.Linear = cluster_force + new float3((movement_force + cells[i].impulse / 3.0f), 0.0f);
+                if (!cells[i].impulse.Equals(float2.zero))
+                {
+                    var cell = cells[i];
+                    cell.impulse = float2.zero;
+                    cell.was_impulse = false;
+                    cells[i] = cell;
+                }
+                else if (cells[i].was_impulse)
+                {
+                    var cell = cells[i];
+                    cell.was_impulse = false;
+                    cells[i] = cell;
+                }
                 vel.Linear.z = -translations[i].Position.z;
                 vel.Angular = float3.zero;
                 velocities[i] = vel;
@@ -287,7 +302,7 @@ public partial class ImmuneMovementSystem : SystemBase
                         continue;
                     float3 dist = (translations[j].Position - translations[i].Position);
                     float mag = math.length(dist);
-                    if(mag < bunching_distance && mag > 0)
+                    if (mag < bunching_distance && mag > 0)
                     {
                         float repulsion = 1 - (mag / bunching_distance);
                         cluster_force += math.normalizesafe(dist, float3.zero) * -1 * repulsion * bunching_strength;

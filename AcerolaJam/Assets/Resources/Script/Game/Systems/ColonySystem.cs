@@ -16,7 +16,6 @@ using UnityEngine.Events;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
-[RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(CellCleanupSystem))]
 [UpdateBefore(typeof(PhysicsSystemGroup))]

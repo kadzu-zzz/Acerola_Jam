@@ -2,6 +2,7 @@ using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MapSceneSelection : MonoBehaviour
@@ -29,6 +30,13 @@ public class MapSceneSelection : MonoBehaviour
     void Start()
     {
         current_level = GameManager.Instance().data.level_progress;
+
+        //Skip Unfinished Levels
+        if(level_complete == 8)
+        {
+            current_level = GameManager.Instance().data.level_progress = 12;
+            level_complete = 12;
+        }
 
         int index = 0;
         foreach (Button b in level_buttons)
@@ -79,9 +87,10 @@ public class MapSceneSelection : MonoBehaviour
             }
             else if (level_complete == 13)
             {
+                first_complete = false;
                 cine.PlayCinematic(2, () =>
                 {
-                    //Credits?
+                    SceneManager.LoadScene("CreditScene");
                 });
             }
         }
